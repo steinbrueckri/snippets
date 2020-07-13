@@ -1,0 +1,31 @@
+name: terraform
+on:
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "docs/terraform/**"
+
+env:
+  tf_version: '0.12.20'
+  working_dir: 'docs/terraform'
+jobs:
+  check:
+    name: Check terraform configuration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: tfsec
+        uses: reviewdog/action-tfsec@master
+        with:
+          github_token: ${{ secrets.github_token }}
+          working_directory: ${{ env.working_dir }}
+
+      - uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: ${{ env.tf_version }}
+
+      - name: Run terraform fmt
+        run: cd ${{ env.working_dir }} && terraform fmt -recursive -no-color -check -diff
