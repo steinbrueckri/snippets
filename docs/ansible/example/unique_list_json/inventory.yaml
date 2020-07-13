@@ -1,0 +1,7 @@
+all:
+    vars:
+        disks:
+            - { device: 'hana', vg: 'hanavg00', lv: 'usrsap_lv', size: '40g', mountpoint: '/usr/sap' }
+            - { device: 'hana', vg: 'hanavg00', lv: 'hanadata_lv', size: '1080g', mountpoint: '/hana/data' }
+            - { device: 'hana', vg: 'hanavg00', lv: 'hanalog_lv', size: '512g', mountpoint: '/hana/log' }
+            - { device: 'hana-shared', vg: 'hanavg01', lv: 'hanashared_lv', size: '512g', mountpoint: '/hana/shared' }

@@ -1,0 +1,62 @@
+---
+- name: read the whole line incl. the mointpoints from json variable
+  set_fact: mointpoints_temp="{{item.mountpoint}}"
+  loop: "{{disks}}"
+  register: getmountpoints
+
+- name: make a unique list of needed mointpoints
+  set_fact: mountpoints="{{ getmountpoints.results | map(attribute='ansible_facts.mointpoints_temp') | list | unique}}"
+
+- name: create all mountpointfolders on the instance
+  file:
+    path: "{{ item }}"
+    state: directory
+  loop: "{{mountpoints}}"
+
+# create partition
+- parted:
+    device: "/dev/disk/by-id/google-{{ item.device}}-{{ansible_hostname}}"
+    number: 1
+    flags: [ lvm ]
+    label: gpt
+    state: present
+  loop: "{{ disks | unique}}"
+
+- name: read the device and volumegroupname from json variable
+  set_fact: devicename_temp="{{item.device}},{{item.vg}}" 
+  loop: "{{disks}}"
+  register: getdeviceandvg
+
+- name: make a unique list of the device and volumegroupname
+  set_fact: deviceandvg="{{ getdeviceandvg.results | map(attribute='ansible_facts.devicename_temp') | list | unique }}"
+
+### Create VG
+- name: Create all volume groups
+  lvg:
+    vg: "{{ item.split(',')[1] }}"
+    pvs: "/dev/disk/by-id/google-{{ item.split(',')[0] }}-{{ansible_hostname}}-part1"
+  loop: "{{deviceandvg}}"
+
+ ## Create LV
+- name: Create a logical volume on volume group
+  lvol:
+    vg: "{{ item.vg }}"
+    lv: "{{ item.lv }}"
+    size: "{{ item.size }}"
+  loop: "{{ disks }}"
+
+ ## Format
+- name: format the logicalvolumes
+  filesystem:
+    fstype: xfs
+    dev: "/dev/{{ item.vg }}/{{ item.lv }}"
+  loop: "{{ disks }}"
+
+# mount logical volume datalg
+- name: Mount the logical volumegroups 
+  mount:
+    path: "{{ item.mountpoint }}"
+    src: "/dev/{{ item.vg }}/{{ item.lv }}"
+    fstype: xfs
+    state: mounted
+  loop: "{{ disks }}"
