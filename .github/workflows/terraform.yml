@@ -23,7 +23,7 @@ jobs:
           github_token: ${{ secrets.github_token }}
           working_directory: ${{ env.working_dir }}
 
-      - uses: hashicorp/setup-terraform@v1.2.1
+      - uses: hashicorp/setup-terraform@v1.3.1
         with:
           terraform_version: ${{ env.tf_version }}
 
